@@ -1,29 +1,21 @@
 import discord
 from discord.ext import commands, tasks
 from datetime import datetime
+import os
 
-TOKEN = "MTQ4ODk5MTY1ODMwNDYwNjQ1OQ.GZB5bl.ZftHNX8-8fkve8eh9vyy4bK3V4ZGVVMH_EzjEw"
+TOKEN = os.getenv("DISCORD_TOKEN")
 USER_ID = 833473654800777216
 
-# -----------------------------
-# INTENTS
-# -----------------------------
 intents = discord.Intents.default()
 intents.message_content = True
 
 bot = commands.Bot(command_prefix="!", intents=intents)
 
 # -----------------------------
-# DAY MAPPING (Mon = Day 1)
+# DAY MAP
 # -----------------------------
 day_map = {
-    0: 1,  # Monday
-    1: 2,  # Tuesday
-    2: 3,  # Wednesday
-    3: 4,  # Thursday
-    4: 5,  # Friday
-    5: 6,  # Saturday
-    6: 7   # Sunday
+    0: 1, 1: 2, 2: 3, 3: 4, 4: 5, 5: 6, 6: 7
 }
 
 # -----------------------------
@@ -36,7 +28,7 @@ team_training = {
 }
 
 # -----------------------------
-# YOUR SOLO SOCCER PROGRAM (YOU WANTED THIS BACK)
+# SOLO SOCCER (YOUR PROGRAM)
 # -----------------------------
 solo_program = {
     1: [
@@ -44,219 +36,150 @@ solo_program = {
         "1v1 shadow defending",
         "cone weave → sprint → turn → cone weave",
         "backpedal 10y → sprint 10y",
-        "headers"
+        "headers",
+        "control out of sky → long ball"
     ],
-
-    2: ["Juggling (light technical day)"],
-
+    2: ["Juggling (light day)"],
     3: [
-        "Warmup",
-        "Ladder footwork",
-        "Wall passes (both feet)",
-        "40y sprint mechanics",
-        "1v1 ball control under pressure"
+        "warmup", "ladder", "wall pass pressure breaks",
+        "40 yd sprints", "footwork",
+        "long pass target practice",
+        "100x wall pass L/R",
+        "5-10-5 shuttle"
     ],
-
     4: [
-        "100x wall passes (left/right/alternate)",
-        "first touch drills",
-        "turning under pressure"
+        "100x left", "100x right", "100 alternating"
     ],
-
     5: [
-        "10m acceleration sprints",
-        "lateral cone shuffles",
-        "reaction drills",
-        "small sided intensity touches"
+        "10m sprints", "lateral cone shuffles",
+        "backpack push/pull", "burpees",
+        "ladder", "Day 1 again"
     ],
-
-    6: [
-        "Recovery touches",
-        "light dribbling",
-        "mobility + ball feel"
-    ],
-
-    7: [
-        "MATCH DAY / GAME DAY PREP",
-        "light touches only",
-        "activation + mental prep"
-    ]
+    6: ["recovery touches", "light dribbling", "mobility"],
+    7: ["match prep / recovery"]
 }
 
 # -----------------------------
-# YOUR EXACT SPEED PROGRAM (UNCHANGED)
+# SPEED PROGRAM (YOUR EXACT)
 # -----------------------------
 speed_program = {
-    1: """DAY 1 TESTING (every 3 weeks)
+    1: """DAY 1:
 - dynamic warmup
-- 60 yard sprint
-- max effort broad jumps
-
-DAY 1 WORK DAY
+- 60 yd sprint
 - broad jumps
-- 3x3 sprint
-- 3x10m
-- safety bar box squat 4x4 @75%
-- incline DB bench press 3x6
-- GHD hip extension 3x8
-- chest supported DB row 3x8
-""",
 
-    2: """DAY 2 SPEED RECOVERY
-- biking or walking
-- circuit 1""",
+WORK:
+- broad jumps 3x3
+- sprint 3x10m
+- squat 4x4
+- incline DB bench 3x6
+- GHD hip ext 3x8
+- DB row 3x8""",
 
-    3: """DAY 3 SPEED WORK
-- flying 10s 2x10m
-- rear foot elevated pogos
-- push press 4x4 @75%
-- hip thrust 3x8
-- pull ups 3x6
-- DB split squat 3x8
-""",
+    2: """RECOVERY:
+- 2 min cardio
+- 10 russian baby makers
+- 5 cossack squats
+- 3 rounds:
+  - 90/90 (5 each)
+  - down dog → pigeon""",
 
-    4: """DAY 4 SPEED RECOVERY
-- biking or walking
-- circuit 2""",
+    3: """DAY 3:
+- flying 10s
+- single leg pogos
+- push press
+- hip thrust
+- pull ups
+- split squat""",
 
-    5: """DAY 5 SPEED WORK
+    4: """RECOVERY:
+- 3 rounds:
+  - calf iso 30s
+  - 3 min conditioning
+  - 8 hip flexor curls
+  - 3 min conditioning""",
+
+    5: """DAY 5:
 - sprint 3x20m
-- flying 10s 3x10m
-- box jumps 4x2
-- DB bench press 3x8
-- DB row 3x8
-""",
+- flying 10s
+- box jumps
+- DB bench
+- leg extension
+- DB row""",
 
-    6: """DAY 6 SPEED RECOVERY
-- biking or walking
-- circuit 1""",
+    6: """RECOVERY:
+- repeat recovery circuit""",
 
-    7: """DAY 7 MATCH / LIGHT DAY
-- full recovery or match prep
-"""
+    7: """MATCH / LIGHT DAY"""
 }
 
 # -----------------------------
-# ISOMETRICS / PLYOS
-# -----------------------------
-isometrics = ["hip iso", "groin iso", "hamstring iso", "soleus iso"]
-plyos = ["squat jumps", "pogos", "chair jumps"]
-
-# -----------------------------
-# NIGHT ROUTINE
-# -----------------------------
-def night_routine():
-    return """🌙 NIGHT ROUTINE
-- stretch 10 min
-- foam roll
-- ankle/hip mobility
-- hydrate
-- visualize tomorrow session
-- sleep early
-"""
-
-# -----------------------------
-# BUILD DAILY PLAN (FULL SYSTEM)
+# BUILD PLAN
 # -----------------------------
 def build_plan():
     now = datetime.now()
     day_name = now.strftime("%A").lower()
-    date = now.strftime("%Y-%m-%d")
-
     program_day = day_map[now.weekday()]
 
-    msg = f"🏟️ **DAILY FOOTBALL PLAN ({day_name.upper()})**\n\n"
+    msg = f"🏟️ DAILY PLAN ({day_name.upper()})\n\n"
 
-    # TEAM TRAINING
-    msg += "⚽ TEAM TRAINING:\n"
-    msg += team_training.get(day_name, "No team training today") + "\n\n"
+    msg += "⚽ TEAM:\n"
+    msg += team_training.get(day_name, "None") + "\n\n"
 
-    # SOLO SOCCER
-    msg += "🧠 SOLO SOCCER SESSION:\n"
+    msg += "🧠 SOLO:\n"
     for s in solo_program.get(program_day, []):
         msg += f"- {s}\n"
-    msg += "\n"
 
-    # SPEED PROGRAM
-    msg += "⚡ SPEED PROGRAM:\n"
-    msg += speed_program.get(program_day, "No speed session") + "\n\n"
-
-    # ISOMETRICS
-    msg += "🧊 ISOMETRICS:\n"
-    for i in isometrics:
-        msg += f"- {i}\n"
-
-    msg += "\n⚡ PLYOMETRICS:\n"
-    for p in plyos:
-        msg += f"- {p}\n"
+    msg += "\n⚡ SPEED:\n"
+    msg += speed_program.get(program_day, "")
 
     return msg
 
-
 # -----------------------------
-# DM SYSTEM
+# DM FUNCTION
 # -----------------------------
 async def send_dm(content):
-    try:
-        user = await bot.fetch_user(USER_ID)
-        await user.send(content)
-    except Exception as e:
-        print("DM ERROR:", e)
-
+    user = await bot.fetch_user(USER_ID)
+    await user.send(content)
 
 # -----------------------------
 # SCHEDULER
 # -----------------------------
-triggered_today = set()
+triggered = set()
 
 @tasks.loop(seconds=10)
 async def scheduler():
-    global triggered_today
+    now = datetime.now().strftime("%H:%M")
 
-    now = datetime.now()
-    time_str = now.strftime("%H:%M")
+    if now == "00:00":
+        triggered.clear()
 
-    if time_str == "00:00":
-        triggered_today.clear()
+    if now == "05:00" and "5" not in triggered:
+        await send_dm(build_plan())
+        triggered.add("5")
 
-    if time_str == "05:00" and "05:00" not in triggered_today:
-        await send_dm("🌅 5 AM FULL FOOTBALL PLAN\n\n" + build_plan())
-        triggered_today.add("05:00")
+    elif now == "12:00" and "12" not in triggered:
+        await send_dm("🍽️ Lunch reminder")
+        triggered.add("12")
 
-    elif time_str == "12:00" and "12:00" not in triggered_today:
-        await send_dm("🍽️ LUNCH CHECK")
-        triggered_today.add("12:00")
+    elif now == "14:00" and "14" not in triggered:
+        await send_dm("🟡 Stay ready")
+        triggered.add("14")
 
-    elif time_str == "14:00" and "14:00" not in triggered_today:
-        await send_dm("🟡 2 PM ACTIVATION")
-        triggered_today.add("14:00")
+    elif now == "16:00" and "16" not in triggered:
+        await send_dm("⚽ Pre-training prep")
+        triggered.add("16")
 
-    elif time_str == "16:00" and "16:00" not in triggered_today:
-        await send_dm("⚽ PRE-TRAINING CHECK")
-        triggered_today.add("16:00")
-
-    elif time_str == "21:00" and "21:00" not in triggered_today:
-        await send_dm(night_routine())
-        triggered_today.add("21:00")
-
+    elif now == "21:00" and "21" not in triggered:
+        await send_dm("🌙 Night routine + recovery")
+        triggered.add("21")
 
 # -----------------------------
-# START BOT
+# START
 # -----------------------------
 @bot.event
 async def on_ready():
     print(f"Logged in as {bot.user}")
-
-    if not scheduler.is_running():
-        scheduler.start()
-
-
-# -----------------------------
-# TEST
-# -----------------------------
-@bot.command()
-async def test(ctx):
-    await send_dm("✅ SYSTEM WORKING")
-
+    scheduler.start()
 
 bot.run(TOKEN)
